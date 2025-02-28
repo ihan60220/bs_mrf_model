@@ -29,6 +29,8 @@ k_scale = 1.1
 
 kx_dft, ky_dft, E_dft = mrf.loadBandsMat(path_dft)
 print("band structure shape:", E_dft.shape)
+
+# possible modify source to train multiple bands at once
 mrf.initializeBand(kx=kx_dft, ky=ky_dft, Eb=E_dft[band_index,...], offset=offset, kScale=k_scale, flipKAxes=True)
 
 # Plot slices with initialiation to check offset and scale
