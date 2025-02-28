@@ -1,2 +1,2 @@
 # bs_reconstruction
-Using machine learning to reconstruct the band structure of photoexcited materials
+Using https://www.nature.com/articles/s43588-022-00382-2 to reconstruct band structure of photoexcited materials
