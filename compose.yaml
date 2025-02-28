@@ -3,6 +3,6 @@ services:
     build: ./
     volumes:
       - results:/fuller_scripts/results
-
-volumes:
-  results:
+      - type: bind
+        source: ./results
+        target: /fuller_scripts/results
