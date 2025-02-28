@@ -8,4 +8,4 @@ class MrfRecPara(MrfRec):
         super().__init__(self)
         
         # modify the E_0 argument to support multiple arguments
-        self.numBands = 
+        self.numBands = numBands

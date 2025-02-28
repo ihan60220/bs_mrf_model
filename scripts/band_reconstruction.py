@@ -19,13 +19,17 @@ print("creating mrf model...")
 mrf = MrfRec(E=E, kx=kx, ky=ky, I=I, eta=.12)
 mrf.I_normalized = True
 
+# debugging
+
+print(E.size, kx.size, ky.size)
+
 # Initialize mrf model with band structure approximation from DFT
 print("initializing E_0 to DFT calculations...")
 path_dft = './data/theory/WSe2_HSE06_bands.mat'
 
-band_index = 0  # there is a total of 80 different bands
+band_index = 30  # there is a total of 80 different bands
 offset = 0.4    # default was -0.1
-k_scale = 1.1
+k_scale = 1.0
 
 kx_dft, ky_dft, E_dft = mrf.loadBandsMat(path_dft)
 print("band structure shape:", E_dft.shape)
