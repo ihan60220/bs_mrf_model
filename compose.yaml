@@ -1,0 +1,8 @@
+services:
+  fuller:
+    build: ./
+    volumes:
+      - results:/fuller_scripts/results
+
+volumes:
+  results:
