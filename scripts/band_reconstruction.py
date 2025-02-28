@@ -24,7 +24,7 @@ print("initializing E_0 to DFT calculations...")
 path_dft = './data/theory/WSe2_HSE06_bands.mat'
 
 band_index = 0  # there is a total of 80 different bands
-offset = 0.6    # default was -0.1
+offset = 0.4    # default was -0.1
 k_scale = 1.1
 
 kx_dft, ky_dft, E_dft = mrf.loadBandsMat(path_dft)
@@ -33,9 +33,9 @@ mrf.initializeBand(kx=kx_dft, ky=ky_dft, Eb=E_dft[band_index,...], offset=offset
 
 # Plot slices with initialiation to check offset and scale
 print("plotting initialized mrf...")
-mrf.plotI(ky=0, plotBandInit=True, cmapName='coolwarm')
+mrf.plotI(ky=0, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
 plt.savefig("./results/init_ky_0")
-mrf.plotI(kx=0, plotBandInit=True, cmapName='coolwarm')
+mrf.plotI(kx=0, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
 plt.savefig("./results/init_kx_0")
 
 # Run optimization to perform reconstruction
@@ -49,17 +49,15 @@ mrf.iter_para(n_epochs)
 
 # Plot results
 print("plotting reconstructed bands...")
-mrf.plotBands()
+mrf.plotBands(surfPlot=True)
 plt.savefig("./results/band_structure")
-mrf.plotI(ky=0, plotBand=True, plotBandInit=True, plotSliceInBand=False, cmapName='coolwarm')
+mrf.plotI(ky=0, plotBand=True, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
 plt.savefig("./results/band_ky_0")
-mrf.plotI(ky=0.5, plotBand=True, plotBandInit=True, plotSliceInBand=False, cmapName='coolwarm')
-mrf.plotI(kx=0, plotBand=True, plotBandInit=True, plotSliceInBand=False, cmapName='coolwarm')
+mrf.plotI(kx=0, plotBand=True, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
 plt.savefig("./results/band_kx_0")
-mrf.plotI(kx=0.5, plotBand=True, plotBandInit=True, plotSliceInBand=False, cmapName='coolwarm')
 
 # Save results
 path_save = 'results/'
-mrf.saveBand(path_save + 'mrf_rec_%02i.h5' % band_index, index=band_index)
+mrf.saveBand(f"{path_save}mrf_rec_{band_index}.h5", index=band_index)
 
 # think about maybe serializing the mrf for later use

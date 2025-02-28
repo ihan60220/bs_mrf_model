@@ -13,7 +13,7 @@ RUN mkdir data
 COPY data data
 
 # running entire fuller package in docker image
-COPY data_preprocessing.py mpes_reconstruction.py ./
+COPY scripts ./
 
 # run in interactive mode
 CMD ["python3", "mpes_reconstruction.py"]

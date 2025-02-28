@@ -1,8 +1,0 @@
-services:
-  fuller:
-    build: ./
-    volumes:
-      - results:/fuller_scripts/results
-      - type: bind
-        source: ./results
-        target: /fuller_scripts/results

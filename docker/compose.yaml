@@ -1,0 +1,9 @@
+services:
+  fuller:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile
+    volumes:
+      - type: bind
+        source: ../results
+        target: /fuller_scripts/results
