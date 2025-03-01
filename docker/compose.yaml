@@ -7,3 +7,6 @@ services:
       - type: bind
         source: ../results
         target: /fuller_scripts/results
+      - type: bind
+        source: ../data
+        target: /fuller_scripts/data
