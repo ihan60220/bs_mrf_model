@@ -1,12 +1,13 @@
 services:
   fuller:
+    hostname: fuller
     build:
       context: ../
       dockerfile: ./docker/Dockerfile
     volumes:
       - type: bind
         source: ../results
-        target: /fuller_scripts/results
+        target: /home/fuller/results
       - type: bind
         source: ../data
-        target: /fuller_scripts/data
+        target: /home/fuller/data
