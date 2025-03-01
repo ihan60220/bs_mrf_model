@@ -20,11 +20,28 @@ ehi, elo = Evals[0], Evals[469]
 paths = np.load(r'../data/processed/hslines/WSe2_kpath.npz')
 
 reconbands = {}
-for i in range(14):
-    bands = loadHDF('../results/reconstruction/mrf_rec_0.h5')
-    print(f"band {i}", bands[0])
+
+
+if True:
+    bands = np.empty((4, 256, 256))
+    for i in range(4):
+        band = loadHDF(f'../results/band_data/mrf_rec_{i * 5}.h5')
+        kx, ky, Eb = band['kx'], band['ky'], band['Eb']
+        Eb.reshape(256, 256)
+        bands[i] = Eb
+
+    print(bands)
+    
     bdi = aly.bandpath_map(np.moveaxis(bands, 0, 2), pathr=paths['rowInds'], pathc=paths['colInds'], eaxis=2)
-    reconbands[f"band_{i}"] = bdi.T
+    reconbands["recon"] = bdi.T
+
+else:
+    for name in ['LDA', 'PBE', 'PBEsol', 'HSE']:
+        bands = np.load(r'../data/processed/wse2_recon/postproc_refrotsym_bands_'+name.lower()+'.npy')
+        print(bands.shape)
+        bdi = aly.bandpath_map(np.moveaxis(bands, 0, 2), pathr=paths['rowInds'], pathc=paths['colInds'], eaxis=2)
+        reconbands[name] = bdi.T
+
 
 pos = paths['pathInds']
 pos[-1] -= 1
@@ -32,8 +49,8 @@ pos[-1] -= 1
 ff, axa = plt.subplots(1, 1, figsize=(10.5, 8))
 im = axa.imshow(bcsm, cmap='Blues', extent=[0, 185, elo, ehi], aspect=12)
 # axa.plot(dftbands['HSE'][:,:14] - hse_th_shift, 'r--', zorder=2)
-for ib in range(14):
-    axa.plot(reconbands['LDA'][:,ib] + 0.65, color='r', zorder=1)
+for ib in range(4): # normally set to 14
+    axa.plot(reconbands['recon'][:,ib] + 0.65, color='r', zorder=1)
 axa.tick_params(axis='y', length=8, width=2, labelsize=15)
 axa.tick_params(axis='x', length=0, labelsize=15, pad=8)
 axa.set_ylim([elo, ehi])

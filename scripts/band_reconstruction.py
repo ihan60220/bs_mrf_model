@@ -33,9 +33,9 @@ def reconstruct(band_index):
     Wrapper function for reconstructing band structure given some parameters
     """
 
-    band_index = 1  # there is a total of 80 different bands
-    offset = 0.4    # default was -0.1
-    k_scale = 1.0
+      # there is a total of 80 different bands
+    offset = -0.1    # default was -0.1
+    k_scale = 1.1
 
     kx_dft, ky_dft, E_dft = mrf.loadBandsMat(path_dft)
     print("band structure shape:", E_dft.shape)
@@ -79,6 +79,6 @@ def reconstruct(band_index):
 
 
 # call the wrapper function
-for band_index in range(14):
+for band_index in [0, 5, 10, 15]:
     print(f"reconstructing the {band_index}th band...")
     reconstruct(band_index)
