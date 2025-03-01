@@ -3,11 +3,8 @@ wn.filterwarnings("always")
 
 import numpy as np
 from fuller.mrfRec import MrfRec
-from fuller.generator import rotosymmetrize
-from fuller.utils import saveHDF
 from mpes import analysis as aly, fprocessing as fp
 
-import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
@@ -45,14 +42,15 @@ segPoints = [nGM, nMK, nKG]
 rowInds, colInds, pathInds = aly.points2path(pathPoints[:,0], pathPoints[:,1], npoints=segPoints)
 nSegPoints = len(rowInds)
 
-# Define plotting function
-
-def plot_path(mrf, vmax, save_path):
+# plotting function for high symmetry points
+def plot_path(mrf, vmax, save_path, fname):
     # Normalize data
     imNorm = mrf.I / mrf.I.max()
 
     # Sample the data along high-symmetry lines (k-path) connecting the corresponding high-symmetry points
     pathDiagram = aly.bandpath_map(imNorm, pathr=rowInds, pathc=colInds, eaxis=2)
+
+    print(pathDiagram)
 
     Evals = mrf.E
     ehi, elo = Evals[0], Evals[449]
@@ -72,8 +70,33 @@ def plot_path(mrf, vmax, save_path):
     ax.set_ylabel('Energy (eV)', fontsize=15, rotation=-90, labelpad=20)
     ax.tick_params(axis='x', length=0, pad=6)
     ax.tick_params(which='both', axis='y', length=8, width=2, labelsize=15)
+
+    full_path = save_path + fname
     
-    plt.savefig(save_path, dpi=200)
+    plt.savefig(full_path, dpi=200)
+
+
+# plotting cross section data
+def plot_slices(mrf, plot_dir, prefix):
+    # ky sice
+    mrf.plotI(ky=0., cmapName="coolwarm")
+    plt.xlim((-1.65, 1.65))
+    plt.ylim((-8.5, 0))
+    plt.savefig(plot_dir + '/' + prefix + '_ky_slice.png', dpi=300)
+
+    # kx sice
+    mrf.plotI(kx=0., cmapName="coolwarm")
+    plt.xlim((-1.65, 1.65))
+    plt.ylim((-8.5, 0))
+    plt.savefig(plot_dir + '/' + prefix + '_kx_slice.png', dpi=300)
+
+    # ky sice
+    mrf.plotI(E=-1.2, cmapName="coolwarm", equal_axes=True, figsize=(9, 7.5))
+    plt.xlim((-1.65, 1.65))
+    plt.ylim((-1.65, 1.65))
+    plt.tight_layout()
+    plt.savefig(plot_dir + '/' + prefix + '_E_slice.png', dpi=300)
+
 
 # Load data
 data = fp.readBinnedhdf5('./data/pes/0_binned.h5')
@@ -85,13 +108,22 @@ ky = data['ky']
 # Create reconstruction object from data file
 mrf = MrfRec(E=E, kx=kx, ky=ky, I=I)
 
+# plot dir
+plot_dir = './results/preprocessing'
+save_path = './results/preprocessing/'
+
 # preprocessing steps
 print("symmetrizing...")
 mrf.symmetrizeI()
-plot_path(mrf, 0.5, './results/symmetrized')
+plot_path(mrf, 0.5, save_path, 'symmetrized')
+plot_slices(mrf, plot_dir, 'sym')
+
 print("normalizing...")
 mrf.normalizeI(kernel_size=(20, 20, 25), n_bins=256, clip_limit=0.15, use_gpu=False)
-plot_path(mrf, 0.5, './results/normalized')
+plot_path(mrf, 0.5, save_path, 'normalized')
+plot_slices(mrf, plot_dir, 'norm')
+
 print("smoothing...")
 mrf.smoothenI(sigma=(.8, .8, 1.))
-plot_path(mrf, 1, './results/smoothened')
+plot_path(mrf, 1, save_path, 'smoothened')
+plot_slices(mrf, plot_dir, 'smooth')
