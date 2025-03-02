@@ -15,7 +15,7 @@ RUN pip install --upgrade https://github.com/VincentStimper/mclahe/archive/maste
 
 # running entire fuller package in docker image
 RUN mkdir scripts
-COPY scripts scripts
+COPY --chown=fuller:fuller scripts scripts
 
 # run in interactive mode
 CMD ["python3", "mpes_reconstruction.py"]

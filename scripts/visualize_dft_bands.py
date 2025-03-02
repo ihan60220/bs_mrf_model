@@ -23,14 +23,13 @@ reconbands = {}
 
 
 if True:
-    bands = np.empty((4, 256, 256))
-    for i in range(4):
-        band = loadHDF(f'../results/band_data/mrf_rec_{i * 5}.h5')
+    num_bands = 30 # default
+    bands = np.empty((num_bands, 256, 256))
+    for i in range(num_bands):
+        band = loadHDF(f'../results/band_data/mrf_rec_{i}.h5')
         kx, ky, Eb = band['kx'], band['ky'], band['Eb']
         Eb.reshape(256, 256)
         bands[i] = Eb
-
-    print(bands)
     
     bdi = aly.bandpath_map(np.moveaxis(bands, 0, 2), pathr=paths['rowInds'], pathc=paths['colInds'], eaxis=2)
     reconbands["recon"] = bdi.T
@@ -49,7 +48,7 @@ pos[-1] -= 1
 ff, axa = plt.subplots(1, 1, figsize=(10.5, 8))
 im = axa.imshow(bcsm, cmap='Blues', extent=[0, 185, elo, ehi], aspect=12)
 # axa.plot(dftbands['HSE'][:,:14] - hse_th_shift, 'r--', zorder=2)
-for ib in range(4): # normally set to 14
+for ib in range(num_bands): # normally set to 14
     axa.plot(reconbands['recon'][:,ib] + 0.65, color='r', zorder=1)
 axa.tick_params(axis='y', length=8, width=2, labelsize=15)
 axa.tick_params(axis='x', length=0, labelsize=15, pad=8)

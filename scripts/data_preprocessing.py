@@ -17,7 +17,7 @@ mpl.rcParams['ps.fonttype'] = 42
 
 # high symmetry points need to be defined for graphic Brioullin zone
 
-fdata = fp.readBinnedhdf5('./data/pes/1_sym.h5')
+fdata = fp.readBinnedhdf5('../data/pes/1_sym.h5')
 mc = aly.MomentumCorrector(fdata['V'])
 
 mc.selectSlice2D(selector=slice(30, 32), axis=2)
@@ -49,8 +49,6 @@ def plot_path(mrf, vmax, save_path, fname):
 
     # Sample the data along high-symmetry lines (k-path) connecting the corresponding high-symmetry points
     pathDiagram = aly.bandpath_map(imNorm, pathr=rowInds, pathc=colInds, eaxis=2)
-
-    print(pathDiagram)
 
     Evals = mrf.E
     ehi, elo = Evals[0], Evals[449]
@@ -99,7 +97,7 @@ def plot_slices(mrf, plot_dir, prefix):
 
 
 # Load data
-data = fp.readBinnedhdf5('./data/pes/0_binned.h5')
+data = fp.readBinnedhdf5('../data/pes/0_binned.h5')
 I = data['V']
 E = data['E']
 kx = data['kx']
@@ -109,8 +107,8 @@ ky = data['ky']
 mrf = MrfRec(E=E, kx=kx, ky=ky, I=I)
 
 # plot dir
-plot_dir = './results/preprocessing'
-save_path = './results/preprocessing/'
+plot_dir = '../results/preprocessing'
+save_path = '../results/preprocessing/'
 
 # preprocessing steps
 print("symmetrizing...")

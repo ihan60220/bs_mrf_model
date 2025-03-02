@@ -79,6 +79,6 @@ def reconstruct(band_index):
 
 
 # call the wrapper function
-for band_index in [0, 5, 10, 15]:
+for band_index in range(30):
     print(f"reconstructing the {band_index}th band...")
     reconstruct(band_index)
