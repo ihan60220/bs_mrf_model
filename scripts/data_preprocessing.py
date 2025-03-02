@@ -88,7 +88,7 @@ def plot_slices(mrf, plot_dir, prefix):
     plt.ylim((-8.5, 0))
     plt.savefig(plot_dir + '/' + prefix + '_kx_slice.png', dpi=300)
 
-    # ky sice
+    # E sice
     mrf.plotI(E=-1.2, cmapName="coolwarm", equal_axes=True, figsize=(9, 7.5))
     plt.xlim((-1.65, 1.65))
     plt.ylim((-1.65, 1.65))

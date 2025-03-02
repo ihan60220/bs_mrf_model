@@ -77,6 +77,7 @@ def reconstruct(band_index):
 
     # think about maybe serializing the mrf for later use
 
+plt.tight_layout()
 
 # call the wrapper function
 for band_index in range(30):
