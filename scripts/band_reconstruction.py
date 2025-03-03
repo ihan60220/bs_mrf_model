@@ -36,7 +36,7 @@ def reconstruct(band_index):
     """
 
       # there is a total of 80 different bands
-    offset = -0.2    # default was -0.1
+    offset = 0.5
     k_scale = 1.1
 
     kx_dft, ky_dft, E_dft = mrf.loadBandsMat(path_dft)
@@ -58,8 +58,8 @@ def reconstruct(band_index):
 
     # Run optimization to perform reconstruction
     print("training model...")
-    eta = 0.1 # default 0.1
-    n_epochs = 100 # default 150
+    eta = 0.1
+    n_epochs = 60 # loss plot shows -logp converges after n=60
 
     mrf.eta = eta
     mrf.iter_para(n_epochs, updateLogP=True)
@@ -88,7 +88,10 @@ def reconstruct(band_index):
 
     # think about maybe serializing the mrf for later use
 
+# parameter
+num_bands = 30
+
 # call the wrapper function
-for band_index in range(1):
+for band_index in range(num_bands):
     print(f"reconstructing the {band_index}th band...")
     reconstruct(band_index)
