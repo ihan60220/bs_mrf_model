@@ -13,9 +13,8 @@ RUN pip install --upgrade pip
 RUN pip install mpes fuller
 RUN pip install --upgrade https://github.com/VincentStimper/mclahe/archive/master.zip
 
-# running entire fuller package in docker image
-RUN mkdir scripts
-COPY --chown=fuller:fuller scripts scripts
+# modify source code
+COPY ../scripts/mrfRec.py /home/fuller/.local/lib/python3.6/site-packages/fuller/mrfRec.py
 
 # run in interactive mode
 CMD ["python3", "mpes_reconstruction.py"]

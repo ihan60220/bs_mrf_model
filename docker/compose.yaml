@@ -6,8 +6,11 @@ services:
       dockerfile: ./docker/Dockerfile
     volumes:
       - type: bind
-        source: ../results
-        target: /home/fuller/results
+        source: ../results/
+        target: /home/fuller/results/
       - type: bind
-        source: ../data
-        target: /home/fuller/data
+        source : ../data/
+        target: /home/fuller/data/
+      - type: bind
+        source: ../scripts/
+        target: /home/fuller/scripts/

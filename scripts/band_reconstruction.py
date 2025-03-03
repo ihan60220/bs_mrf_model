@@ -18,6 +18,8 @@ kx = data['kx']
 ky = data['ky']
 I = data['V']
 
+print(E.shape, kx.shape, ky.shape, I.shape)
+
 # Create MRF model
 print("creating mrf model...")
 mrf = MrfRec(E=E, kx=kx, ky=ky, I=I, eta=.12)
@@ -25,7 +27,7 @@ mrf.I_normalized = True
 
 # Initialize mrf model with band structure approximation from DFT
 print("initializing E_0 to DFT calculations...")
-path_dft = '../data/theory/WSe2_HSE06_bands.mat'
+path_dft = '../data/theory/WSe2_PBEsol_bands.mat'
 
 
 def reconstruct(band_index):
@@ -34,7 +36,7 @@ def reconstruct(band_index):
     """
 
       # there is a total of 80 different bands
-    offset = -0.1    # default was -0.1
+    offset = -0.2    # default was -0.1
     k_scale = 1.1
 
     kx_dft, ky_dft, E_dft = mrf.loadBandsMat(path_dft)
@@ -47,29 +49,38 @@ def reconstruct(band_index):
     print("plotting initialized mrf...")
 
     mrf.plotI(ky=0, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
+    plt.tight_layout()
     plt.savefig("../results/reconstruction/init_ky_0")
 
     mrf.plotI(kx=0, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
+    plt.tight_layout()
     plt.savefig("../results/reconstruction/init_kx_0")
 
     # Run optimization to perform reconstruction
     print("training model...")
     eta = 0.1 # default 0.1
-    n_epochs = 150 # default 150
+    n_epochs = 100 # default 150
 
     mrf.eta = eta
-    mrf.iter_para(n_epochs)
+    mrf.iter_para(n_epochs, updateLogP=True)
 
     # Plot results
     print("plotting reconstructed bands...")
     mrf.plotBands(surfPlot=True)
+    plt.tight_layout()
     plt.savefig("../results/reconstruction/bs_surface")
 
     mrf.plotI(ky=0, plotBand=True, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
+    plt.tight_layout()
     plt.savefig("../results/reconstruction/band_ky_0")
 
     mrf.plotI(kx=0, plotBand=True, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
+    plt.tight_layout()
     plt.savefig("../results/reconstruction/band_kx_0")
+
+    # plot loss
+    mrf.plotLoss()
+    plt.savefig('../results/reconstruction/loss')
 
     # Save results
     path_save = '../results/band_data/'
@@ -77,9 +88,7 @@ def reconstruct(band_index):
 
     # think about maybe serializing the mrf for later use
 
-plt.tight_layout()
-
 # call the wrapper function
-for band_index in range(30):
+for band_index in range(1):
     print(f"reconstructing the {band_index}th band...")
     reconstruct(band_index)
