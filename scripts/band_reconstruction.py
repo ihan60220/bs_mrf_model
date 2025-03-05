@@ -12,7 +12,7 @@ from fuller.utils import loadHDF
 
 # Load preprocessed data
 print("loading preprocessed data...")
-data = loadHDF('../data/pes/3_smooth.h5')
+data = loadHDF('../results/preprocessing/WSe2_preprocessed.h5')
 E = data['E']
 kx = data['kx']
 ky = data['ky']
@@ -36,7 +36,7 @@ def reconstruct(band_index):
     """
 
       # there is a total of 80 different bands
-    offset = 0.5
+    offset = 0.6
     k_scale = 1.1
 
     kx_dft, ky_dft, E_dft = mrf.loadBandsMat(path_dft)
@@ -45,21 +45,10 @@ def reconstruct(band_index):
     # possible modify source to train multiple bands at once
     mrf.initializeBand(kx=kx_dft, ky=ky_dft, Eb=E_dft[band_index,...], offset=offset, kScale=k_scale, flipKAxes=True)
 
-    # Plot slices with initialiation to check offset and scale
-    print("plotting initialized mrf...")
-
-    mrf.plotI(ky=0, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
-    plt.tight_layout()
-    plt.savefig("../results/reconstruction/init_ky_0")
-
-    mrf.plotI(kx=0, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
-    plt.tight_layout()
-    plt.savefig("../results/reconstruction/init_kx_0")
-
     # Run optimization to perform reconstruction
     print("training model...")
     eta = 0.1
-    n_epochs = 60 # loss plot shows -logp converges after n=60
+    n_epochs = 90 # loss plot shows -logp converges after n=60
 
     mrf.eta = eta
     mrf.iter_para(n_epochs, updateLogP=True)
@@ -70,11 +59,11 @@ def reconstruct(band_index):
     plt.tight_layout()
     plt.savefig("../results/reconstruction/bs_surface")
 
-    mrf.plotI(ky=0, plotBand=True, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
+    mrf.plotI(ky=0, plotBand=True, plotBandInit=True, cmapName='YlOrBr', bandColor='cyan', initColor='lime')
     plt.tight_layout()
     plt.savefig("../results/reconstruction/band_ky_0")
 
-    mrf.plotI(kx=0, plotBand=True, plotBandInit=True, cmapName='YlGn', bandColor='tab:orange', initColor='m')
+    mrf.plotI(kx=0, plotBand=True, plotBandInit=True, cmapName='YlOrBr', bandColor='cyan', initColor='lime')
     plt.tight_layout()
     plt.savefig("../results/reconstruction/band_kx_0")
 

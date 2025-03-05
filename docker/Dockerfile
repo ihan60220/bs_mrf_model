@@ -15,6 +15,7 @@ RUN pip install --upgrade https://github.com/VincentStimper/mclahe/archive/maste
 
 # modify source code
 COPY ../scripts/mrfRec.py /home/fuller/.local/lib/python3.6/site-packages/fuller/mrfRec.py
+COPY ../scripts/utils.py /home/fuller/.local/lib/python3.6/site-packages/fuller/utils.py
 
 # run in interactive mode
 CMD ["python3", "mpes_reconstruction.py"]

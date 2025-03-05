@@ -18,6 +18,9 @@ ehi, elo = Evals[0], Evals[469]
 
 paths = np.load(r'../data/processed/hslines/WSe2_kpath.npz')
 
+dftbands = sio.loadmat('../data/theory/hslines/initials_DFT_G-M.mat')   
+hse_th_shift = dftbands['HSE'][100:125, 0].max()
+
 reconbands = {}
 
 num_bands = 30 # default
@@ -26,7 +29,6 @@ bands = np.empty((num_bands, 256, 256))
 for i in range(num_bands):
     band = loadHDF(f'../results/band_data/mrf_rec_{i}.h5')
     kx, ky, Eb = band['kx'], band['ky'], band['Eb']
-    print(f'Eb #{i}', Eb)
     Eb.reshape(256, 256)
     bands[i] = Eb
     
@@ -46,10 +48,10 @@ pos = paths['pathInds']
 pos[-1] -= 1
 
 ff, axa = plt.subplots(1, 1, figsize=(10.5, 8))
-im = axa.imshow(bcsm, cmap='Blues', extent=[0, 185, elo, ehi], aspect=12)
-# axa.plot(dftbands['HSE'][:,:14] - hse_th_shift, 'r--', zorder=2)
+im = axa.imshow(bcsm, cmap='YlOrBr', extent=[0, 185, elo, ehi], aspect=12)
+
 for ib in range(num_bands): # normally set to 14
-    axa.plot(reconbands['recon'][:,ib], color='r', zorder=1)
+    axa.plot(reconbands['recon'][:,ib], color='cyan', zorder=1)
 
 axa.tick_params(axis='y', length=8, width=2, labelsize=15)
 axa.tick_params(axis='x', length=0, labelsize=15, pad=8)

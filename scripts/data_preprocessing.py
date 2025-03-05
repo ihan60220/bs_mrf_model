@@ -3,6 +3,7 @@ wn.filterwarnings("always")
 
 import numpy as np
 from fuller.mrfRec import MrfRec
+from fuller.utils import saveHDF
 from mpes import analysis as aly, fprocessing as fp
 
 import matplotlib.pyplot as plt
@@ -54,7 +55,7 @@ def plot_path(mrf, vmax, save_path, fname):
     ehi, elo = Evals[0], Evals[449]
 
     f, ax = plt.subplots(figsize=(10, 6))
-    plt.imshow(pathDiagram[:450, :], cmap='Blues', aspect=10.9, extent=[0, nSegPoints, elo, ehi], vmin=0, vmax=vmax)
+    plt.imshow(pathDiagram[:450, :], cmap='YlOrBr', aspect=10.9, extent=[0, nSegPoints, elo, ehi], vmin=0, vmax=vmax)
     ax.set_xticks(pathInds)
     ax.set_xticklabels(['$\overline{\Gamma}$', '$\overline{\mathrm{M}}$',
                         '$\overline{\mathrm{K}}$', '$\overline{\Gamma}$'], fontsize=15)
@@ -73,29 +74,6 @@ def plot_path(mrf, vmax, save_path, fname):
     
     plt.savefig(full_path, dpi=200)
 
-
-# plotting cross section data
-def plot_slices(mrf, plot_dir, prefix):
-    # ky sice
-    mrf.plotI(ky=0., cmapName="coolwarm")
-    plt.xlim((-1.65, 1.65))
-    plt.ylim((-8.5, 0))
-    plt.savefig(plot_dir + '/' + prefix + '_ky_slice.png', dpi=300)
-
-    # kx sice
-    mrf.plotI(kx=0., cmapName="coolwarm")
-    plt.xlim((-1.65, 1.65))
-    plt.ylim((-8.5, 0))
-    plt.savefig(plot_dir + '/' + prefix + '_kx_slice.png', dpi=300)
-
-    # E sice
-    mrf.plotI(E=-1.2, cmapName="coolwarm", equal_axes=True, figsize=(9, 7.5))
-    plt.xlim((-1.65, 1.65))
-    plt.ylim((-1.65, 1.65))
-    plt.tight_layout()
-    plt.savefig(plot_dir + '/' + prefix + '_E_slice.png', dpi=300)
-
-
 # Load data
 data = fp.readBinnedhdf5('../data/pes/0_binned.h5')
 I = data['V']
@@ -107,21 +85,21 @@ ky = data['ky']
 mrf = MrfRec(E=E, kx=kx, ky=ky, I=I)
 
 # plot dir
-plot_dir = '../results/preprocessing'
 save_path = '../results/preprocessing/'
 
 # preprocessing steps
 print("symmetrizing...")
 mrf.symmetrizeI()
 plot_path(mrf, 0.5, save_path, 'symmetrized')
-plot_slices(mrf, plot_dir, 'sym')
 
 print("normalizing...")
 mrf.normalizeI(kernel_size=(20, 20, 25), n_bins=256, clip_limit=0.15, use_gpu=False)
 plot_path(mrf, 0.5, save_path, 'normalized')
-plot_slices(mrf, plot_dir, 'norm')
 
 print("smoothing...")
 mrf.smoothenI(sigma=(.8, .8, 1.))
 plot_path(mrf, 1, save_path, 'smoothened')
-plot_slices(mrf, plot_dir, 'smooth')
+
+# save the preprocessed data
+data_save = [['axes', {'E': mrf.E, 'kx': mrf.kx, 'ky': mrf.ky}], ['binned', {'V': mrf.I}]]
+saveHDF(*data_save, save_addr='../results/preprocessing/WSe2_preprocessed.h5')
