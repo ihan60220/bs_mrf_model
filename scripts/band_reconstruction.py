@@ -1,14 +1,7 @@
-# Import packages
-import numpy as np
 import pickle
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-from matplotlib.ticker import MultipleLocator, FormatStrFormatter
-
-from mpes import analysis as aly, fprocessing as fp
 from fuller.mrfRec import MrfRec
 from fuller.utils import loadHDF
-
 
 # Load preprocessed data
 print("loading preprocessed data...")
@@ -44,6 +37,10 @@ def reconstruct(band_index):
 
     # possible modify source to train multiple bands at once
     mrf.initializeBand(kx=kx_dft, ky=ky_dft, Eb=E_dft[band_index,...], offset=offset, kScale=k_scale, flipKAxes=True)
+
+    # save the E0 as either an h5 or pickled file
+    with open(f'../results/band_data/init_band_{band_index}.pkl', 'wb') as f:
+      pickle.dump(mrf.E0, f) # serialize the list
 
     # Run optimization to perform reconstruction
     print("training model...")
