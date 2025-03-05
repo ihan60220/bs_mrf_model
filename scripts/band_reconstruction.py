@@ -2,6 +2,7 @@ import pickle
 import matplotlib.pyplot as plt
 from fuller.mrfRec import MrfRec
 from fuller.utils import loadHDF
+from visualize_dft_bands import plot_bs
 
 # Load preprocessed data
 print("loading preprocessed data...")
@@ -23,14 +24,14 @@ print("initializing E_0 to DFT calculations...")
 path_dft = '../data/theory/WSe2_PBEsol_bands.mat'
 
 
-def reconstruct(band_index):
+def reconstruct(**kwargs):
     """
     Wrapper function for reconstructing band structure given some parameters
     """
 
-      # there is a total of 80 different bands
-    offset = 0.6
-    k_scale = 1.1
+    # there is a total of 80 different bands
+    offset = kwargs['offset']
+    k_scale = kwargs['k_scale']
 
     kx_dft, ky_dft, E_dft = mrf.loadBandsMat(path_dft)
     print("band structure shape:", E_dft.shape)
@@ -44,8 +45,9 @@ def reconstruct(band_index):
 
     # Run optimization to perform reconstruction
     print("training model...")
-    eta = 0.1
-    n_epochs = 90 # loss plot shows -logp converges after n=60
+
+    eta = kwargs['eta']
+    n_epochs = kwargs['n_epochs']
 
     mrf.eta = eta
     mrf.iter_para(n_epochs, updateLogP=True)
@@ -75,9 +77,13 @@ def reconstruct(band_index):
     # think about maybe serializing the mrf for later use
 
 # parameter
-num_bands = 30
+num_bands = 15
+n_epochs = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
 # call the wrapper function
-for band_index in range(num_bands):
-    print(f"reconstructing the {band_index}th band...")
-    reconstruct(band_index)
+# kwargs: band_index, offset, k_scale, eta, n_epochs
+for epoch in n_epochs:
+  for band_index in range(num_bands):
+      print(f"reconstructing the {band_index}th band, epoch={epoch}...")
+      reconstruct(band_index=band_index, offset=0.6, k_scale=1.1, eta=0.1, n_epochs=epoch)
+      plot_bs(num_bands, epoch)
