@@ -18,7 +18,7 @@ def plot_bs(num_bands, n_epoch):
 
     # Load preprocessed photoemission data
     bcsm = np.load('../data/processed/hslines/WSe2_vcut.npy')
-    Evals = fp.readBinnedhdf5('../data/pes/3_smooth.h5')['E']
+    Evals = fp.readBinnedhdf5('../results/preprocessing/WSe2_preprocessed.h5')['E']
     ehi, elo = Evals[0], Evals[469]
 
     paths = np.load('../data/processed/hslines/WSe2_kpath.npz')
@@ -30,12 +30,12 @@ def plot_bs(num_bands, n_epoch):
 
     for i in range(num_bands):
         # initialization bands
-        with open(f'../results/band_data/init_band_{i}.pkl', 'rb') as f:
+        with open(f'../results/band_data/init_band_n={i}_epoch={n_epoch}.pkl', 'rb') as f:
             init_band = pickle.load(f)
             init_bands[i] = init_band
 
         # reconstructed bands
-        recon_band = loadHDF(f'../results/band_data/mrf_rec_{i}.h5')
+        recon_band = loadHDF(f'../results/band_data/bs_recon_n={i}_epoch={n_epoch}.h5')
         kx, ky, Eb = recon_band['kx'], recon_band['ky'], recon_band['Eb']
         Eb.reshape(256, 256)
         recon_bands[i] = Eb
@@ -49,7 +49,7 @@ def plot_bs(num_bands, n_epoch):
     pos = paths['pathInds']
     pos[-1] -= 1
 
-    ff, axa = plt.subplots(1, 1, figsize=(10.5, 8))
+    ff, axa = plt.subplots(1, 1, figsize=(10.5, 6))
     im = axa.imshow(bcsm, cmap='YlOrBr', extent=[0, 185, elo, ehi], aspect=12)
 
     for ib in range(num_bands): # normally set to 14
@@ -68,8 +68,11 @@ def plot_bs(num_bands, n_epoch):
             axa.axvline(x=p, c='k', ls='--', lw=2, dashes=[4, 2])
             
     axa.set_title('Reconstruction', fontsize=15, x=0.8, y=0.9)
-    cax = inset_axes(axa, width="3%", height="30%", bbox_to_anchor=(480, 180, 440, 200))
+    cax = inset_axes(axa, width="3%", height="30%", bbox_to_anchor=(460, 90, 440, 200))
     cb = plt.colorbar(im, cax=cax, ticks=[])
     cb.ax.set_ylabel('Intensity', fontsize=15, rotation=-90, labelpad=17)
 
     plt.savefig(f'../results/reconstruction/bs_recon_{n_epoch}.png')
+
+if __name__=="__main__":
+    plot_bs(8, 10)
