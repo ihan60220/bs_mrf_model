@@ -59,8 +59,8 @@ def plot_path(mrf, vmax, save_path, fname):
     ax.set_xticks(pathInds)
     ax.set_xticklabels(['$\overline{\Gamma}$', '$\overline{\mathrm{M}}$',
                         '$\overline{\mathrm{K}}$', '$\overline{\Gamma}$'], fontsize=15)
-    for p in pathInds[:-1]:
-        ax.axvline(x=p, c='r', ls='--', lw=2, dashes=[4, 2])
+    #for p in pathInds[:-1]:
+        #ax.axvline(x=p, c='r', ls='--', lw=2, dashes=[4, 2])
     # ax.axhline(y=0, ls='--', color='r', lw=2)
     ax.yaxis.set_major_locator(MultipleLocator(2))
     ax.yaxis.set_minor_locator(MultipleLocator(1))
@@ -92,6 +92,8 @@ print("symmetrizing...")
 mrf.symmetrizeI()
 plot_path(mrf, 0.5, save_path, 'symmetrized')
 
+"""
+
 print("normalizing...")
 mrf.normalizeI(kernel_size=(20, 20, 25), n_bins=256, clip_limit=0.15, use_gpu=False)
 plot_path(mrf, 0.5, save_path, 'normalized')
@@ -102,4 +104,5 @@ plot_path(mrf, 1, save_path, 'smoothened')
 
 # save the preprocessed data
 data_save = [['axes', {'E': mrf.E, 'kx': mrf.kx, 'ky': mrf.ky}], ['binned', {'V': mrf.I}]]
-saveHDF(*data_save, save_addr='../results/preprocessing/WSe2_preprocessed.h5')
+saveHDF(*data_save, save_addr='../results/preprocessing/WSe2_preprocessed.h5')"
+"""
