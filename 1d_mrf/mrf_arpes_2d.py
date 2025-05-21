@@ -172,18 +172,56 @@ def extract_band_chain_mrf(intensities, energies, lambda_smooth):
     return energies[path]
 
 
-def extract_multiple_bands(intensities, energies, lambda_smooth, num_bands, symmetry_axes=None):
+
+def extract_multiple_bands(intensities, energies, lambda_smooth, num_bands, symmetry_axes=None, removal_width=5):
+    """
+    Iteratively extract multiple bands, plotting each as it's found.
+
+    Parameters:
+    - intensities:    2D ARPES map (Nk x Ne)
+    - energies:       1D energy grid
+    - lambda_smooth:  smoothness prior weight
+    - num_bands:      number of bands to extract
+    - symmetry_axes:  optional symmetrization axes
+    - removal_width:  half-width (in bins) around each detected band to remove
+
+    Returns:
+    - bands: list of 1D arrays of length Nk
+    """
     residual = preprocess_arpes(intensities, symmetry_axes=symmetry_axes)
+    original = intensities
     bands = []
-    for _ in range(num_bands):
+    N_k, N_e = residual.shape
+    k_indices = np.arange(N_k)
+
+    for idx in range(num_bands):
         band = extract_band_chain_mrf(residual, energies, lambda_smooth)
         bands.append(band)
-        idx = np.argmin(np.abs(energies[None, :] - band[:, None]), axis=1)
-        for i_k, j_e in enumerate(idx):
-            j0 = max(0, j_e-1)
-            j1 = min(residual.shape[1], j_e+2)
+
+        """
+        # Plot current band
+        plt.figure(figsize=(6,4))
+        plt.imshow(residual.T, extent=[k_indices[0], k_indices[-1], energies[0], energies[-1]],
+                   aspect='auto', origin='lower', cmap='gray')
+        plt.plot(k_indices, band, color='cyan', linewidth=2, label=f'Band {idx+1}')
+        plt.xlabel('Momentum index (k)')
+        plt.ylabel('Energy (ω)')
+        plt.title(f'Reconstructed Band {idx+1}')
+        plt.gca().invert_yaxis()
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+        """
+
+        # Remove band region from residual
+        nearest = np.argmin(np.abs(energies[None, :] - band[:, None]), axis=1)
+        for i_k, j_e in enumerate(nearest):
+            j0 = max(0, j_e - removal_width)
+            j1 = min(N_e, j_e + removal_width + 1)
             residual[i_k, j0:j1] = 0.0
+
     return bands
+
 
 
 def plot_bands(intensities, energies, bands, output_path):
