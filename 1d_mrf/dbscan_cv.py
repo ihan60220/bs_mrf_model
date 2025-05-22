@@ -4,6 +4,7 @@ from fuller.utils import loadHDF
 import matplotlib.pyplot as plt
 
 # use intensity-based clustering on ARPES data
+# use monte carlo to sieve out noise
 
 # feature extraction based on density based clustering
 

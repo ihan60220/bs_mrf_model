@@ -51,6 +51,9 @@ def plot_path(mrf, vmax, save_path, fname):
     # Sample the data along high-symmetry lines (k-path) connecting the corresponding high-symmetry points
     pathDiagram = aly.bandpath_map(imNorm, pathr=rowInds, pathc=colInds, eaxis=2)
 
+    # save the high-symmetry cut as npz
+    np.savez('../results/preprocessing/high_sym_cut', pathDiagram[:450, :])
+
     Evals = mrf.E
     ehi, elo = Evals[0], Evals[449]
 
@@ -92,8 +95,6 @@ print("symmetrizing...")
 mrf.symmetrizeI()
 plot_path(mrf, 0.5, save_path, 'symmetrized')
 
-"""
-
 print("normalizing...")
 mrf.normalizeI(kernel_size=(20, 20, 25), n_bins=256, clip_limit=0.15, use_gpu=False)
 plot_path(mrf, 0.5, save_path, 'normalized')
@@ -104,5 +105,4 @@ plot_path(mrf, 1, save_path, 'smoothened')
 
 # save the preprocessed data
 data_save = [['axes', {'E': mrf.E, 'kx': mrf.kx, 'ky': mrf.ky}], ['binned', {'V': mrf.I}]]
-saveHDF(*data_save, save_addr='../results/preprocessing/WSe2_preprocessed.h5')"
-"""
+saveHDF(*data_save, save_addr='../results/preprocessing/WSe2_preprocessed.h5')

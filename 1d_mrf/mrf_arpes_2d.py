@@ -198,7 +198,6 @@ def extract_multiple_bands(intensities, energies, lambda_smooth, num_bands, symm
         band = extract_band_chain_mrf(residual, energies, lambda_smooth)
         bands.append(band)
 
-        """
         # Plot current band
         plt.figure(figsize=(6,4))
         plt.imshow(residual.T, extent=[k_indices[0], k_indices[-1], energies[0], energies[-1]],
@@ -211,7 +210,6 @@ def extract_multiple_bands(intensities, energies, lambda_smooth, num_bands, symm
         plt.legend()
         plt.tight_layout()
         plt.show()
-        """
 
         # Remove band region from residual
         nearest = np.argmin(np.abs(energies[None, :] - band[:, None]), axis=1)
@@ -226,11 +224,11 @@ def extract_multiple_bands(intensities, energies, lambda_smooth, num_bands, symm
 
 def plot_bands(intensities, energies, bands, output_path):
     k = np.arange(intensities.shape[0])
-    plt.figure(figsize=(8,6))
+    plt.figure(figsize=(12,6))
     plt.imshow(intensities.T, extent=[k[0], k[-1], energies[0], energies[-1]],
                aspect='auto', origin='lower', cmap='gray')
     for i, band in enumerate(bands):
-        plt.plot(k, band, color='red', linewidth=3,
+        plt.plot(k, band, color='red', linewidth=1,
                  label='Extracted Band' if i==0 else None)
     plt.xlabel('Momentum index (k)')
     plt.ylabel('Energy (ω)')
@@ -244,6 +242,7 @@ def plot_bands(intensities, energies, bands, output_path):
     print(f"Saved plot to {output_path}")
 
 
+"""
 def test_random(output_path, noise_level=0.05, random_seed=None):
     # More realistic synthetic data: three bands + background + adjustable noise
     if random_seed is not None:
@@ -266,6 +265,7 @@ def test_random(output_path, noise_level=0.05, random_seed=None):
 
     bands = extract_multiple_bands(intensity, E, lambda_smooth=10.0, num_bands=3)
     plot_bands(intensity, E, bands, output_path)
+"""
 
 
 if __name__ == "__main__":
@@ -286,6 +286,10 @@ if __name__ == "__main__":
         test_random(args.output, noise_level=args.noise_level, random_seed=args.random_seed)
     else:
         intensities, energies = load_data(args.intensities, args.energies)
+
+        # manually add energy values since not included correctly in npz
+        energies = np.asarray([1 - i * (9 / 186) for i in range(450)])
+
         bands = extract_multiple_bands(intensities, energies,
                                        args.lambda_smooth, args.num_bands,
                                        symmetry_axes=args.symmetry_axes)

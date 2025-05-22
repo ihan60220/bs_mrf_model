@@ -1,4 +1,4 @@
 /data
 /results/band_data
 /results/preprocessing/WSe2_preprocessed.h5
-/scripts/__pycache__
+/1d_mrf/__pycache__
