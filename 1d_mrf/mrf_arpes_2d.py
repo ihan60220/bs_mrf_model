@@ -273,11 +273,11 @@ def plot_bands(intensities, energies, bands, output_path, dft_bands=None):
     # plot DFT priors
     if dft_bands is not None:
         for j, db in enumerate(dft_bands):
-            plt.plot(k_idx, db, linestyle='--', linewidth=2,
+            plt.plot(k_idx, db, linestyle='--', linewidth=1,
                      label=f'DFT Band {j+1}', color='white')
     # plot extracted bands
     for i, band in enumerate(bands):
-        plt.plot(k_idx, band, 'r-', linewidth=3,
+        plt.plot(k_idx, band, 'r-', linewidth=1,
                  label='Extracted Band' if i == 0 else None)
     plt.xlabel('k index')
     plt.ylabel('Energy (ω)')
