@@ -16,28 +16,38 @@ import argparse
 import os
 
 
-def load_data(intensity_path, energy_path=None):
+def load_data(intensity_path, energy_path=None, dft_path=None):
     """
-    Load 2D ARPES intensity map I(k, ω) and corresponding energy grid.
-    Supports:
-      - .npz with arrays 'intensities' (Nk x Ne) and 'energies' (Ne)
-      - .npy, .csv, .txt for intensities (requires energy_path)
+    Load 2D ARPES intensities and energy grid, plus optional DFT bands.
+    Supports .npz bundles with keys 'intensities','energies','dft_bands'
+    or separate files (.npy, .csv) for each.
+
     Returns:
-      intensities: np.ndarray shape (Nk, Ne)
-      energies:     np.ndarray shape (Ne,)
+      intensities: 2D array (Nk x Ne)
+      energies:    1D array (Ne,)
+      dft_bands:   2D array (B x Nk) or None
     """
+    dft_bands = None
+    # Load intensities and energies
     ext = os.path.splitext(intensity_path)[1].lower()
     if ext == '.npz':
         data = np.load(intensity_path)
         intensities = data['intensities']
         energies = data['energies']
+        if 'dft_bands' in data:
+            dft_bands = data['dft_bands']
+        elif 'dft_band' in data:
+            single = data['dft_band']
+            dft_bands = single[np.newaxis, :]
     else:
+        # intensities
         if ext == '.npy':
             intensities = np.load(intensity_path)
         elif ext in ['.csv', '.txt']:
             intensities = np.loadtxt(intensity_path, delimiter=',')
         else:
             raise ValueError(f"Unsupported intensity file type: {ext}")
+        # energies
         if energy_path is None:
             raise ValueError("energy_path must be provided when loading separate intensities")
         e_ext = os.path.splitext(energy_path)[1].lower()
@@ -47,7 +57,25 @@ def load_data(intensity_path, energy_path=None):
             energies = np.loadtxt(energy_path, delimiter=',')
         else:
             raise ValueError(f"Unsupported energy file type: {e_ext}")
-    return intensities, energies
+        # DFT bands
+        if dft_path:
+            d_ext = os.path.splitext(dft_path)[1].lower()
+            if d_ext == '.npy':
+                loaded = np.load(dft_path)
+            elif d_ext in ['.csv', '.txt']:
+                loaded = np.loadtxt(dft_path, delimiter=',')
+            else:
+                raise ValueError(f"Unsupported DFT file type: {d_ext}")
+            # Ensure shape (B, Nk)
+            arr = np.array(loaded)
+            if arr.ndim == 1:
+                dft_bands = arr[np.newaxis, :]
+            elif arr.ndim == 2 and arr.shape[1] == intensities.shape[0]:
+                # provided as (Nk, B)
+                dft_bands = arr.T
+            else:
+                dft_bands = arr
+    return intensities, energies, dft_bands
 
 
 def load_3d_data(intensity_path, kx_path, ky_path, energy_path=None):
@@ -138,8 +166,7 @@ def preprocess_arpes(intensities, symmetry_axes=None, sigma_smooth=1.0, clip_lim
     preproc = intensities.copy()
     if symmetry_axes:
         for axis in symmetry_axes:
-            left = preproc[:axis]
-            right = preproc[axis+1:][::-1]
+            left, right = preproc[:axis], preproc[axis+1:][::-1]
             n = min(len(left), len(right))
             avg = 0.5 * (left[-n:] + right[:n])
             preproc[axis-n:axis] = avg
@@ -151,98 +178,118 @@ def preprocess_arpes(intensities, symmetry_axes=None, sigma_smooth=1.0, clip_lim
     return preproc
 
 
-def extract_band_chain_mrf(intensities, energies, lambda_smooth):
+def extract_band_chain_mrf(intensities, energies, lambda_smooth,
+                           dft_band=None, lambda_dft=0.0):
+    """
+    Single-band MAP via chain MRF with optional single DFT prior.
+    - intensities: Nk x Ne array
+    - energies:    length Ne
+    - dft_band:    length Nk or None
+    - lambda_smooth: pairwise weight
+    - lambda_dft:    DFT anchor weight
+    Returns: 1D array of length Nk
+    """
     N_k, N_e = intensities.shape
     dp = np.zeros((N_k, N_e))
-    backpointer = np.zeros((N_k, N_e), dtype=int)
-    dp[0] = intensities[0]
-
+    backptr = np.zeros((N_k, N_e), int)
+    # initialize node 0
+    for m in range(N_e):
+        dp[0, m] = intensities[0, m]
+        if dft_band is not None:
+            dp[0, m] -= lambda_dft * (energies[m] - dft_band[0])**2
+    # recursion
     for i in range(1, N_k):
         for m in range(N_e):
-            penalty = lambda_smooth * (energies[m] - energies)**2
-            prev_scores = dp[i-1] - penalty
-            j_best = np.argmax(prev_scores)
-            dp[i, m] = intensities[i, m] + prev_scores[j_best]
-            backpointer[i, m] = j_best
-
-    path = np.zeros(N_k, dtype=int)
+            pen_smooth = lambda_smooth * (energies[m] - energies)**2
+            prev_scores = dp[i-1] - pen_smooth
+            best = np.argmax(prev_scores)
+            val = intensities[i, m] + prev_scores[best]
+            if dft_band is not None:
+                val -= lambda_dft * (energies[m] - dft_band[i])**2
+            dp[i, m] = val
+            backptr[i, m] = best
+    # backtrack
+    path = np.zeros(N_k, int)
     path[-1] = np.argmax(dp[-1])
     for i in range(N_k-2, -1, -1):
-        path[i] = backpointer[i+1, path[i+1]]
+        path[i] = backptr[i+1, path[i+1]]
     return energies[path]
 
 
-
-def extract_multiple_bands(intensities, energies, lambda_smooth, num_bands, symmetry_axes=None, removal_width=5):
+def extract_multiple_bands(intensities, energies, lambda_smooth, num_bands,
+                           symmetry_axes=None, removal_sigma=0.1,
+                           dft_bands=None, lambda_dft=0.0):
     """
-    Iteratively extract multiple bands, plotting each as it's found.
-
-    Parameters:
-    - intensities:    2D ARPES map (Nk x Ne)
-    - energies:       1D energy grid
-    - lambda_smooth:  smoothness prior weight
-    - num_bands:      number of bands to extract
-    - symmetry_axes:  optional symmetrization axes
-    - removal_width:  half-width (in bins) around each detected band to remove
-
-    Returns:
-    - bands: list of 1D arrays of length Nk
+    Extract multiple bands sequentially, each with its own DFT prior if provided.
+    - dft_bands: 2D array (B x Nk) or None
     """
-    residual = preprocess_arpes(intensities, symmetry_axes=symmetry_axes)
+    residual = preprocess_arpes(intensities, symmetry_axes)
     original = intensities
     bands = []
-    N_k, N_e = residual.shape
-    k_indices = np.arange(N_k)
-
+    N_k, _ = residual.shape
+    k_idx = np.arange(N_k)
     for idx in range(num_bands):
-        band = extract_band_chain_mrf(residual, energies, lambda_smooth)
+        # select corresponding DFT band if available
+        dft_band = None
+        if dft_bands is not None and idx < dft_bands.shape[0]:
+            dft_band = dft_bands[idx]
+        # extract
+        band = extract_band_chain_mrf(residual, energies,
+                                      lambda_smooth,
+                                      dft_band=dft_band,
+                                      lambda_dft=lambda_dft)
         bands.append(band)
-
-        # Plot current band
-        plt.figure(figsize=(6,4))
-        plt.imshow(residual.T, extent=[k_indices[0], k_indices[-1], energies[0], energies[-1]],
+        # plot each band overlaying its DFT prior
+        plt.figure(figsize=(6, 4))
+        plt.imshow(original.T, extent=[k_idx[0], k_idx[-1], energies[0], energies[-1]],
                    aspect='auto', origin='lower', cmap='gray')
-        plt.plot(k_indices, band, color='cyan', linewidth=2, label=f'Band {idx+1}')
-        plt.xlabel('Momentum index (k)')
+        if dft_band is not None:
+            plt.plot(k_idx, dft_band, 'w--', linewidth=2, label='DFT Band')
+        plt.plot(k_idx, band, 'c-', linewidth=2, label=f'Reconstructed {idx+1}')
+        plt.xlabel('k index')
         plt.ylabel('Energy (ω)')
-        plt.title(f'Reconstructed Band {idx+1}')
+        plt.title(f'Band {idx+1}: DFT vs Reconstruction')
+        plt.legend(loc='upper right')
         plt.gca().invert_yaxis()
-        plt.legend()
         plt.tight_layout()
         plt.show()
-
-        # Remove band region from residual
-        nearest = np.argmin(np.abs(energies[None, :] - band[:, None]), axis=1)
-        for i_k, j_e in enumerate(nearest):
-            j0 = max(0, j_e - removal_width)
-            j1 = min(N_e, j_e + removal_width + 1)
-            residual[i_k, j0:j1] = 0.0
-
+        # remove via Gaussian mask
+        for i in range(N_k):
+            center = band[i]
+            mask = np.exp(-0.5 * ((energies - center) / removal_sigma)**2)
+            residual[i, :] *= (1 - mask)
     return bands
 
 
 
-def plot_bands(intensities, energies, bands, output_path):
-    k = np.arange(intensities.shape[0])
-    plt.figure(figsize=(12,6))
-    plt.imshow(intensities.T, extent=[k[0], k[-1], energies[0], energies[-1]],
+def plot_bands(intensities, energies, bands, output_path, dft_bands=None):
+    """
+    Plot full intensity map with reconstructed bands and optional multiple DFT priors.
+    """
+    k_idx = np.arange(intensities.shape[0])
+    plt.figure(figsize=(8, 6))
+    plt.imshow(intensities.T, extent=[k_idx[0], k_idx[-1], energies[0], energies[-1]],
                aspect='auto', origin='lower', cmap='gray')
+    # plot DFT priors
+    if dft_bands is not None:
+        for j, db in enumerate(dft_bands):
+            plt.plot(k_idx, db, linestyle='--', linewidth=2,
+                     label=f'DFT Band {j+1}', color='white')
+    # plot extracted bands
     for i, band in enumerate(bands):
-        plt.plot(k, band, color='red', linewidth=1,
-                 label='Extracted Band' if i==0 else None)
-    plt.xlabel('Momentum index (k)')
+        plt.plot(k_idx, band, 'r-', linewidth=3,
+                 label='Extracted Band' if i == 0 else None)
+    plt.xlabel('k index')
     plt.ylabel('Energy (ω)')
-    plt.title('ARPES Intensity and Extracted Band')
+    plt.title('ARPES Intensity with DFT & Extracted Bands')
     plt.gca().invert_yaxis()
     plt.colorbar(label='Intensity')
-    if bands:
-        plt.legend(loc='upper right')
+    plt.legend(loc='upper right')
     plt.tight_layout()
     plt.savefig(output_path)
     print(f"Saved plot to {output_path}")
 
 
-"""
 def test_random(output_path, noise_level=0.05, random_seed=None):
     # More realistic synthetic data: three bands + background + adjustable noise
     if random_seed is not None:
@@ -265,32 +312,40 @@ def test_random(output_path, noise_level=0.05, random_seed=None):
 
     bands = extract_multiple_bands(intensity, E, lambda_smooth=10.0, num_bands=3)
     plot_bands(intensity, E, bands, output_path)
-"""
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="MRF-based band extraction from 2D ARPES data")
-    parser.add_argument('--intensities', help="Path to intensities (.npz, .npy, .csv)")
+    import sys
+    parser = argparse.ArgumentParser(description="MRF-based band extraction with multiple DFT priors")
+    parser.add_argument('--intensities', required=True, help="Path to intensities (.npz, .npy, .csv)")
     parser.add_argument('--energies', help="Path to energies (.npy, .csv). Not needed with .npz")
+    parser.add_argument('--dft', help="Path to DFT bands file (.npy, .csv) or .npz key 'dft_bands'")
     parser.add_argument('--output', default='bands.png', help="Output plot file")
     parser.add_argument('--lambda_smooth', type=float, default=5.0, help="Smoothness weight λ")
+    parser.add_argument('--lambda_dft', type=float, default=0.0, help="DFT anchor weight λ_dft")
     parser.add_argument('--sigma_smooth', type=float, default=1.0, help="Gaussian smoothing σ")
+    parser.add_argument('--removal_sigma', type=float, default=0.1, help="Sigma for Gaussian removal")
     parser.add_argument('--num_bands', type=int, default=1, help="Number of bands to extract")
     parser.add_argument('--symmetry_axes', nargs='*', type=int, help="Symmetry axes indices")
-    parser.add_argument('--test', action='store_true', help="Run on synthetic data")
-    parser.add_argument('--noise_level', type=float, default=0.05, help="Noise amplitude for synthetic data")
-    parser.add_argument('--random_seed', type=int, help="Random seed for reproducibility")
+    parser.add_argument('--test', action='store_true', help="Run synthetic test data")
     args = parser.parse_args()
 
     if args.test:
-        test_random(args.output, noise_level=args.noise_level, random_seed=args.random_seed)
-    else:
-        intensities, energies = load_data(args.intensities, args.energies)
+        # Run synthetic test and exit
+        test_random(args.output)
+        sys.exit(0)
 
-        # manually add energy values since not included correctly in npz
-        energies = np.asarray([1 - i * (9 / 186) for i in range(450)])
+    # Normal execution
+    intensities, energies, dft_bands = load_data(args.intensities, args.energies, dft_path=args.dft)
 
-        bands = extract_multiple_bands(intensities, energies,
-                                       args.lambda_smooth, args.num_bands,
-                                       symmetry_axes=args.symmetry_axes)
-        plot_bands(intensities, energies, bands, args.output)
+    # manually add energy values since not included correctly in npz
+    energies = np.asarray([1 - i * (9 / 186) for i in range(450)])
+
+    bands = extract_multiple_bands(intensities, energies,
+                                   args.lambda_smooth,
+                                   args.num_bands,
+                                   symmetry_axes=args.symmetry_axes,
+                                   removal_sigma=args.removal_sigma,
+                                   dft_bands=dft_bands,
+                                   lambda_dft=args.lambda_dft)
+    plot_bands(intensities, energies, bands, args.output, dft_bands=dft_bands)
