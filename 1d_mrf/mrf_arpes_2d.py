@@ -239,20 +239,7 @@ def extract_multiple_bands(intensities, energies, lambda_smooth, num_bands,
                                       dft_band=dft_band,
                                       lambda_dft=lambda_dft)
         bands.append(band)
-        # plot each band overlaying its DFT prior
-        plt.figure(figsize=(6, 4))
-        plt.imshow(original.T, extent=[k_idx[0], k_idx[-1], energies[0], energies[-1]],
-                   aspect='auto', origin='lower', cmap='gray')
-        if dft_band is not None:
-            plt.plot(k_idx, dft_band, 'w--', linewidth=2, label='DFT Band')
-        plt.plot(k_idx, band, 'c-', linewidth=2, label=f'Reconstructed {idx+1}')
-        plt.xlabel('k index')
-        plt.ylabel('Energy (ω)')
-        plt.title(f'Band {idx+1}: DFT vs Reconstruction')
-        plt.legend(loc='upper right')
-        plt.gca().invert_yaxis()
-        plt.tight_layout()
-        plt.show()
+        
         # remove via Gaussian mask
         for i in range(N_k):
             center = band[i]
@@ -339,7 +326,7 @@ if __name__ == "__main__":
     intensities, energies, dft_bands = load_data(args.intensities, args.energies, dft_path=args.dft)
 
     # manually add energy values since not included correctly in npz
-    energies = np.asarray([1 - i * (9 / 186) for i in range(450)])
+    energies = np.asarray([1 - i * (9 / 450) for i in range(450)])
 
     bands = extract_multiple_bands(intensities, energies,
                                    args.lambda_smooth,
