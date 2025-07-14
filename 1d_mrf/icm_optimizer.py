@@ -24,16 +24,40 @@ def penalty(energy_band, arpes_mapping, energy_val, idx, eta):
     return penalty
 
 
-def iterated_conditional_modes(num_iter, arpes_mapping, initial_values, eta):
+def iterated_conditional_modes(arpes_mapping, bin_size, initialization, num_iter, eta):
     """
     num_iter - number of iterations of coordinate descent to perform [int]
     energy_band - an array containing the 1D MRF values [2D array]
     intial_values - the initialization for the MRF optimization
     """
     
+    # determing the binning intervals of the arpes mapping and bounds
+    min = np.min(arpes_mapping)
+    max = np.max(arpes_mapping)
+
+    # create new binned energy values bounded by max and min
+    binned_energy = np.arange(min, max, bin_size)
+
     # initialize the energy band
-    energy_band = initial_values.copy()
+    energy_band = initialization.copy()
+
+    # vectorize the penalty function
+    v_penalty = np.vectorize(penalty)
 
     for _ in range(num_iter):
         # perform coordinate descent on each node
-        pass
+        for i in range(energy_band.size):
+            # edge cases
+            if i == 0:
+                 # only look to the right
+                applied_energy = v_penalty(binned_energy)
+                correct_energy = binned_energy(np.argmin(applied_energy))
+
+            elif i == energy_band.size - 1:
+                 # only look to the left
+                 applied_energy = v_penalty(binned_energy)
+                 correct_energy = binned_energy(np.argmin(applied_energy))
+            else:
+                 applied_energy = v_penalty(binned_energy)
+                 correct_energy = binned_energy(np.argmin(applied_energy))
+             
